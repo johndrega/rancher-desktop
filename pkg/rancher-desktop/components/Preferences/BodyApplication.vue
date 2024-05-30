@@ -6,6 +6,7 @@ import { mapGetters, mapState } from 'vuex';
 import PreferencesApplicationBehavior from '@pkg/components/Preferences/ApplicationBehavior.vue';
 import PreferencesApplicationEnvironment from '@pkg/components/Preferences/ApplicationEnvironment.vue';
 import PreferencesApplicationGeneral from '@pkg/components/Preferences/ApplicationGeneral.vue';
+import PreferencesApplicationAppearance from '@pkg/components/Preferences/ApplicationAppearance.vue';
 import RdTabbed from '@pkg/components/Tabbed/RdTabbed.vue';
 import Tab from '@pkg/components/Tabbed/Tab.vue';
 import { Settings } from '@pkg/config/settings';
@@ -23,6 +24,7 @@ export default Vue.extend({
     PreferencesApplicationBehavior,
     PreferencesApplicationEnvironment,
     PreferencesApplicationGeneral,
+    PreferencesApplicationAppearance,
   },
   props: {
     preferences: {
@@ -70,20 +72,25 @@ export default Vue.extend({
   >
     <template #tabs>
       <tab
+        label="Appearance"
+        name="appearance"
+        :weight="1"
+      />
+      <tab
         v-if="!isPlatformWindows"
         label="Environment"
         name="environment"
-        :weight="1"
+        :weight="2"
       />
       <tab
         label="Behavior"
         name="behavior"
-        :weight="2"
+        :weight="3"
       />
       <tab
         label="General"
         name="general"
-        :weight="3"
+        :weight="4"
       />
     </template>
     <div class="application-content">

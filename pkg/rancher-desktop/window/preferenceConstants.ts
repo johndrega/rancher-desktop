@@ -11,7 +11,7 @@ const vmDarwinTabs: string[] = vmLinuxTabs.concat(['network', 'emulation']);
 export const preferencesNavItems: NavItems[] = [
   {
     name: 'Application',
-    tabs: ['general', 'behavior', 'environment'],
+    tabs: ['general', 'behavior', 'environment', 'appearance'],
   },
   {
     name: process.platform === 'win32' ? 'WSL' : 'Virtual Machine',

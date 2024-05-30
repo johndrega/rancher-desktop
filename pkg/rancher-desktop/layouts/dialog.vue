@@ -25,15 +25,19 @@
 import Vue from 'vue';
 
 import { ipcRenderer } from '@pkg/utils/ipcRenderer';
+import { Theme } from '@pkg/config/settings';
+import electron from 'electron';
 
 export default Vue.extend({
   head() {
-    // If dark-mode is set to auto (follow system-prefs) this is all we need
-    // In a possible future with a three-way pref
-    // (Always off // Always on // Follow system pref)
-    // the "dark" part will be a dynamic pref.
-    // See https://github.com/rancher/dashboard/blob/3454590ff6a825f7e739356069576fbae4afaebc/layouts/default.vue#L227 for an example
-    return { bodyAttrs: { class: 'theme-dark' } };
+    const preferences = this.$store.getters['preferences/getPreferences'];
+    const theme =
+      preferences.application.theme !== Theme.SYSTEM
+        ? preferences.application.theme
+        : electron?.nativeTheme?.shouldUseDarkColors
+        ? Theme.DARK
+        : Theme.LIGHT;
+    return { bodyAttrs: { class: `theme-${theme}` } };
   },
   mounted() {
     // The page component is mounted before the layout (because the layout

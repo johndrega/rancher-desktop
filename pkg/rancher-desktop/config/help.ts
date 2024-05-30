@@ -29,6 +29,7 @@ class PreferencesHelp {
     'Application-behavior':            'ui/preferences/application/behavior',
     'Application-environment':         'ui/preferences/application/environment',
     'Application-general':             'ui/preferences/application/general',
+    'Application-appearance':          'ui/preferences/application/appearance',
     'Virtual Machine-hardware':        'ui/preferences/virtual-machine/hardware',
     'Virtual Machine-volumes':         'ui/preferences/virtual-machine/volumes',
     'Virtual Machine-network':         'ui/preferences/virtual-machine/network',
