@@ -408,6 +408,19 @@ containerEngine:
       label: containerd
       description: Namespaces for container images; use with nerdctl.
 
+applicationTheme:
+  label: Application Theme
+  options:
+    dark:
+      label: Dark
+      description: Use dark theme
+    light:
+      label: Light
+      description: Use light theme
+    system-defined:
+      label: System defined
+      description: Use the system defined theme
+
 webAssembly:
   label: WebAssembly (Wasm)
   enabled: Enabled

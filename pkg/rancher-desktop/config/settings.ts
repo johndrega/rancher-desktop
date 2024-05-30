@@ -48,6 +48,12 @@ export enum CacheMode {
   MMAP = 'mmap',
 }
 
+export enum Theme {
+  DARK = 'dark',
+  LIGHT = 'light',
+  SYSTEM = 'system-defined'
+}
+
 export class SettingsError extends Error {
   toString() {
     // This is needed on linux. Without it, we get a randomish replacement
@@ -77,6 +83,7 @@ export const defaultSettings = {
     startInBackground:      false,
     hideNotificationIcon:   false,
     window:                 { quitOnClose: false },
+    theme:                  Theme.SYSTEM,
   },
   containerEngine: {
     allowedImages: {

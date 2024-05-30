@@ -12,6 +12,7 @@ import {
   SecurityModel,
   Settings,
   VMType,
+  Theme
 } from '@pkg/config/settings';
 import { NavItemName, navItemNames, TransientSettings } from '@pkg/config/transientSettings';
 import { PathManagementStrategy } from '@pkg/integrations/pathManager';
@@ -93,6 +94,7 @@ export default class SettingsValidator {
         startInBackground:      this.checkBoolean,
         hideNotificationIcon:   this.checkBoolean,
         window:                 { quitOnClose: this.checkBoolean },
+        theme:                  this.checkEnum(...Object.values(Theme)),
       },
       containerEngine: {
         allowedImages: {

@@ -3,6 +3,7 @@
 import Vue from 'vue';
 import { mapGetters } from 'vuex';
 
+import ThemeSelector from '@pkg/components/ThemeSelector.vue';
 import RdCheckbox from '@pkg/components/form/RdCheckbox.vue';
 import RdFieldset from '@pkg/components/form/RdFieldset.vue';
 import { Settings } from '@pkg/config/settings';
@@ -12,7 +13,7 @@ import type { PropType } from 'vue';
 
 export default Vue.extend({
   name:       'preferences-application-general',
-  components: { RdCheckbox, RdFieldset },
+  components: { RdCheckbox, RdFieldset, ThemeSelector },
   props:      {
     preferences: {
       type:     Object as PropType<Settings>,
@@ -86,6 +87,14 @@ export default Vue.extend({
         :is-locked="isPreferenceLocked('application.telemetry.enabled')"
         @input="onChange('application.telemetry.enabled', $event)"
       />
+    </rd-fieldset>
+    <rd-fieldset data-test="applicationTheme" legend-text="Application Theme">
+      <template #default="{ isLocked }">
+        <theme-selector
+          :theme="preferences.application.theme"
+          @change="onChange('application.theme', $event)"
+        />
+      </template>
     </rd-fieldset>
   </div>
 </template>
