@@ -108,6 +108,7 @@ export default class SettingsValidator {
         memoryInGB:   this.checkLima(this.checkNumber(1, Number.POSITIVE_INFINITY)),
         numberCPUs:   this.checkLima(this.checkNumber(1, Number.POSITIVE_INFINITY)),
         hostResolver: this.checkPlatform('win32', this.checkBoolean),
+        name:         this.checkString,
       },
       experimental: {
         containerEngine: { webAssembly: { enabled: this.checkBoolean } },

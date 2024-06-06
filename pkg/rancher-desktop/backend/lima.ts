@@ -50,6 +50,7 @@ import { executable } from '@pkg/utils/resources';
 import { jsonStringifyWithWhiteSpace } from '@pkg/utils/stringify';
 import { defined, RecursivePartial } from '@pkg/utils/typeUtils';
 import { openSudoPrompt } from '@pkg/window';
+import * as settingsImpl from '@pkg/config/settingsImpl';
 
 /* eslint @typescript-eslint/switch-exhaustiveness-check: "error" */
 
@@ -227,7 +228,6 @@ interface SudoCommand {
 const console = Logging.lima;
 const DEFAULT_DOCKER_SOCK_LOCATION = '/var/run/docker.sock';
 
-export const MACHINE_NAME = '0';
 const IMAGE_VERSION = DEPENDENCY_VERSIONS.alpineLimaISO.isoVersion;
 const ALPINE_EDITION = 'rd';
 const ALPINE_VERSION = DEPENDENCY_VERSIONS.alpineLimaISO.alpineVersion;
@@ -292,6 +292,9 @@ export default class LimaBackend extends events.EventEmitter implements VMBacken
     this.dockerDirManager = dockerDirManager;
     this.kubeBackend = kubeFactory(this);
 
+    this.machineName = settingsImpl.getSettings().virtualMachine.name;
+    this.CONFIG_PATH = path.join(paths.lima, '_config', `${ this.machineName }.yaml`);
+
     this.progressTracker = new ProgressTracker((progress) => {
       this.progress = progress;
       this.emit('progress');
@@ -300,11 +303,12 @@ export default class LimaBackend extends events.EventEmitter implements VMBacken
     if (!(process.env.RD_TEST ?? '').includes('e2e')) {
       process.on('exit', async() => {
         // Attempt to shut down any stray qemu processes.
-        await this.lima('stop', '--force', MACHINE_NAME);
+        await this.lima('stop', '--force', this.machineName);
       });
     }
   }
 
+  readonly machineName: string;
   readonly kubeBackend: K8s.KubernetesBackend;
   readonly executor = this;
   #containerEngineClient: ContainerEngineClient | undefined;
@@ -317,7 +321,7 @@ export default class LimaBackend extends events.EventEmitter implements VMBacken
     throw new Error('Invalid state, no container engine client available.');
   }
 
-  protected readonly CONFIG_PATH = path.join(paths.lima, '_config', `${ MACHINE_NAME }.yaml`);
+  protected readonly CONFIG_PATH: string;
 
   /** The current config state. */
   protected cfg: BackendSettings | undefined;
@@ -540,10 +544,10 @@ export default class LimaBackend extends events.EventEmitter implements VMBacken
       // This shouldn't be possible (it should only be running if we started it
       // in the same Rancher Desktop instance); but just in case, we still stop
       // the VM anyway.
-      await this.lima('stop', MACHINE_NAME);
+      await this.lima('stop', this.machineName);
     }
 
-    const diskPath = path.join(paths.lima, MACHINE_NAME, 'basedisk');
+    const diskPath = path.join(paths.lima, this.machineName, 'basedisk');
 
     await fs.promises.copyFile(this.baseDiskImage, diskPath);
     // The config file will be updated in updateConfig() instead; no need to do it here.
@@ -622,6 +626,9 @@ export default class LimaBackend extends events.EventEmitter implements VMBacken
       }
       mounts.push(mount);
     }
+
+    const configPath = path.join(paths.lima, this.machineName, 'lima.yaml');
+    fs.writeFileSync('/tmp/lima_path', `${configPath}`);
 
     return mounts;
   }
@@ -721,7 +728,7 @@ export default class LimaBackend extends events.EventEmitter implements VMBacken
     this.updateConfigPortForwards(config);
     if (currentConfig) {
       // update existing configuration
-      const configPath = path.join(paths.lima, MACHINE_NAME, 'lima.yaml');
+      const configPath = path.join(paths.lima, this.machineName, 'lima.yaml');
 
       await this.progressTracker.action(
         'Updating outdated virtual machine',
@@ -767,7 +774,7 @@ export default class LimaBackend extends events.EventEmitter implements VMBacken
 
   protected async getLimaConfig(): Promise<LimaConfiguration | undefined> {
     try {
-      const configPath = path.join(paths.lima, MACHINE_NAME, 'lima.yaml');
+      const configPath = path.join(paths.lima, this.machineName, 'lima.yaml');
       const configRaw = await fs.promises.readFile(configPath, 'utf-8');
 
       return yaml.parse(configRaw) as LimaConfiguration;
@@ -881,7 +888,7 @@ export default class LimaBackend extends events.EventEmitter implements VMBacken
     if (options.root) {
       args = ['sudo'].concat(args);
     }
-    args = ['shell', `--workdir=${ workDir }`, MACHINE_NAME].concat(args);
+    args = ['shell', `--workdir=${ workDir }`, this.machineName].concat(args);
 
     if (this.debug) {
       console.log(`> limactl ${ args.join(' ') }`);
@@ -914,7 +921,7 @@ export default class LimaBackend extends events.EventEmitter implements VMBacken
 
     try {
       // Print a slightly different message if execution fails.
-      const { stdout } = await this.limaWithCapture({ expectFailure: true }, 'shell', `--workdir=${ workDir }`, MACHINE_NAME, ...command);
+      const { stdout } = await this.limaWithCapture({ expectFailure: true }, 'shell', `--workdir=${ workDir }`, this.machineName, ...command);
 
       if (options.capture) {
         return stdout;
@@ -959,7 +966,7 @@ export default class LimaBackend extends events.EventEmitter implements VMBacken
         const lines = stdout.split(/\r?\n/).filter(x => x.trim());
         const entries = lines.map(line => JSON.parse(line) as LimaListResult);
 
-        return entries.find(entry => entry.name === MACHINE_NAME);
+        return entries.find(entry => entry.name === this.machineName);
       } catch (ex) {
         console.error('Could not parse lima status, assuming machine is unavailable.');
 
@@ -1587,7 +1594,7 @@ export default class LimaBackend extends events.EventEmitter implements VMBacken
       const scriptPath = path.join(workdir, path.basename(filePath));
 
       await fs.promises.writeFile(scriptPath, fileContents, 'utf-8');
-      await this.lima('copy', scriptPath, `${ MACHINE_NAME }:${ tempPath }`);
+      await this.lima('copy', scriptPath, `${ this.machineName }:${ tempPath }`);
       await this.execCommand('chmod', permissions.toString(8), tempPath);
       await this.execCommand({ root: true }, 'mv', tempPath, filePath);
     } finally {
@@ -1602,7 +1609,7 @@ export default class LimaBackend extends events.EventEmitter implements VMBacken
     const tempPath = `/tmp/${ path.basename(workdir) }.${ path.basename(hostPath) }`;
 
     try {
-      await this.lima('copy', hostPath, `${ MACHINE_NAME }:${ tempPath }`);
+      await this.lima('copy', hostPath, `${ this.machineName }:${ tempPath }`);
       await this.execCommand('chmod', '644', tempPath);
       await this.execCommand({ root: true }, 'mv', tempPath, vmPath);
     } finally {
@@ -1612,7 +1619,7 @@ export default class LimaBackend extends events.EventEmitter implements VMBacken
   }
 
   copyFileOut(vmPath: string, hostPath: string): Promise<void> {
-    return this.lima('copy', `${ MACHINE_NAME }:${ vmPath }`, hostPath);
+    return this.lima('copy', `${ this.machineName }:${ vmPath }`, hostPath);
   }
 
   /**
@@ -1743,7 +1750,7 @@ export default class LimaBackend extends events.EventEmitter implements VMBacken
   protected async installTrivy() {
     const trivyPath = path.join(paths.resources, 'linux', 'internal', 'trivy');
 
-    await this.lima('copy', trivyPath, `${ MACHINE_NAME }:./trivy`);
+    await this.lima('copy', trivyPath, `${ this.machineName }:./trivy`);
     await this.execCommand({ root: true }, 'mv', './trivy', '/usr/local/bin/trivy');
   }
 
@@ -1769,10 +1776,10 @@ export default class LimaBackend extends events.EventEmitter implements VMBacken
 
     await this.progressTracker.action('Starting virtual machine', 100, async() => {
       try {
-        await this.lima('start', '--tty=false', await this.isRegistered ? MACHINE_NAME : this.CONFIG_PATH);
+        await this.lima('start', '--tty=false', await this.isRegistered ? this.machineName : this.CONFIG_PATH);
       } finally {
         // Symlink the logs (especially if start failed) so the users can find them
-        const machineDir = path.join(paths.lima, MACHINE_NAME);
+        const machineDir = path.join(paths.lima, this.machineName);
 
         // Start the process, but ignore the result.
         fs.promises.readdir(machineDir)
@@ -1817,12 +1824,12 @@ export default class LimaBackend extends events.EventEmitter implements VMBacken
 
         // Virtualization Framework only supports RAW disks
         if (vmStatus && config.experimental.virtualMachine.type === VMType.VZ) {
-          const diffdisk = path.join(paths.lima, MACHINE_NAME, 'diffdisk');
+          const diffdisk = path.join(paths.lima, this.machineName, 'diffdisk');
           const { format } = await this.imageInfo(diffdisk);
 
           if (format === ImageFormat.QCOW2) {
             if (isVMAlreadyRunning) {
-              await this.lima('stop', MACHINE_NAME);
+              await this.lima('stop', this.machineName);
               isVMAlreadyRunning = false;
             }
             await this.convertToRaw(diffdisk);
@@ -1853,7 +1860,7 @@ export default class LimaBackend extends events.EventEmitter implements VMBacken
             if (isDowngrade && isVMAlreadyRunning) {
               // If we're downgrading, stop the VM (and start it again immediately),
               // to ensure there are no containers running (so we can delete files).
-              await this.lima('stop', MACHINE_NAME);
+              await this.lima('stop', this.machineName);
               await this.startVM();
             }
           });
@@ -1984,7 +1991,7 @@ export default class LimaBackend extends events.EventEmitter implements VMBacken
         archive.finalize();
         await archiveFinished;
 
-        await this.lima('copy', path.join(workdir, 'certs.tar'), `${ MACHINE_NAME }:/tmp/certs.tar`);
+        await this.lima('copy', path.join(workdir, 'certs.tar'), `${ this.machineName }:/tmp/certs.tar`);
         await this.execCommand({ root: true }, 'tar', 'xf', '/tmp/certs.tar', '-C', '/usr/local/share/ca-certificates/');
       }
     } finally {
@@ -2063,7 +2070,7 @@ CREDFWD_URL='http://${ SLIRP.HOST_GATEWAY }:${ stateInfo.port }'
           // TODO: Remove try/catch once https://github.com/lima-vm/lima/issues/1381 is fixed
           // The first time a new VM running on VZ is stopped, it dies with a "panic".
           try {
-            await this.lima('stop', MACHINE_NAME);
+            await this.lima('stop', this.machineName);
           } catch (ex) {
             if (status.vmType === VMType.VZ) {
               console.log(`limactl stop failed with ${ ex }`);
@@ -2089,7 +2096,7 @@ CREDFWD_URL='http://${ SLIRP.HOST_GATEWAY }:${ stateInfo.port }'
         await this.progressTracker.action(
           'Deleting virtual machine',
           10,
-          this.lima('delete', '--force', MACHINE_NAME));
+          this.lima('delete', '--force', this.machineName));
       }
     } catch (ex) {
       await this.setState(State.ERROR);

@@ -28,6 +28,8 @@ export interface IpcMainEvents {
   'get-app-version': () => void;
   'update-network-status': (status: boolean) => void;
 
+  'vm-switch': (machine_name: string) => void;
+
   // #region main/update
   'update-state': () => void;
   // Quit and apply the update.

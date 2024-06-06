@@ -3,18 +3,20 @@ import Vue from 'vue';
 import { mapGetters } from 'vuex';
 
 import BackendProgress from '@pkg/components/BackendProgress.vue';
-import StatusBarItem, { StatusBarItemData } from '@pkg/components/StatusBarItem.vue';
+import StatusBarItem, {
+  StatusBarItemData,
+} from '@pkg/components/StatusBarItem.vue';
 
 type BarItem = {
-  name: string,
-  component?: string,
-  icon: string,
-  data?: StatusBarItemData,
+  name: string;
+  component?: string;
+  icon: string;
+  data?: StatusBarItemData;
 };
 
 export default Vue.extend({
   components: { BackendProgress, StatusBarItem },
-  computed:   {
+  computed: {
     ...mapGetters('preferences', ['getPreferences']),
     kubernetesVersion(): string {
       return this.getPreferences.kubernetes.version;
@@ -25,31 +27,54 @@ export default Vue.extend({
     containerEngine(): string {
       return this.getPreferences.containerEngine.name;
     },
+    virtualMachineName(): string {
+      return this.getPreferences.virtualMachine.name;
+    },
     items(): BarItem[] {
       return [
         {
-          name: 'version', component: 'Version', icon: 'icon icon-rancher-desktop',
-        }, {
-          name: 'network', component: 'NetworkStatus', icon: 'icon icon-globe',
-        }, {
+          name: 'version',
+          component: 'Version',
+          icon: 'icon icon-rancher-desktop',
+        },
+        {
+          name: 'network',
+          component: 'NetworkStatus',
+          icon: 'icon icon-globe',
+        },
+        {
           name: 'kubernetesVersion',
           icon: 'kubernetes-black.svg',
           data: {
             label: {
-              bar:     'product.kubernetesVersion',
+              bar: 'product.kubernetesVersion',
               tooltip: 'product.kubernetesVersion',
             },
-            value: this.kubernetesEnabled ? this.kubernetesVersion : this.t('product.deactivated'),
+            value: this.kubernetesEnabled
+              ? this.kubernetesVersion
+              : this.t('product.deactivated'),
           },
-        }, {
+        },
+        {
           name: 'containerEngine',
           icon: 'icon icon-init_container',
           data: {
             label: {
-              bar:     'product.containerEngine.abbreviation',
+              bar: 'product.containerEngine.abbreviation',
               tooltip: 'product.containerEngine.fullName',
             },
             value: this.containerEngine,
+          },
+        },
+        {
+          name: 'virtualMachineName',
+          icon: 'kubernetes-black.svg',
+          data: {
+            label: {
+              bar: 'product.virtualMachine',
+              tooltip: 'product.virtualMachine',
+            },
+            value: this.virtualMachineName,
           },
         },
       ];
@@ -61,9 +86,7 @@ export default Vue.extend({
 <template>
   <footer>
     <div class="left-column">
-      <template
-        v-for="item in items"
-      >
+      <template v-for="item in items">
         <status-bar-item
           :key="item.name"
           :sub-component="item.component"

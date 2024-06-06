@@ -141,6 +141,7 @@ product:
   versionChecking: (checking...)
   networkStatus: Network status
   kubernetesVersion: Kubernetes
+  virtualMachine: Virtual Machine
   containerEngine:
     fullName: Container Engine
     abbreviation: CE

@@ -100,6 +100,7 @@ export const defaultSettings = {
      * is handled by host-resolver on Windows platform only.
      */
     hostResolver: true,
+    name: "0"
   },
   WSL:        { integrations: {} as Record<string, boolean> },
   kubernetes: {

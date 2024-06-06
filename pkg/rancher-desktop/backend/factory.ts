@@ -28,6 +28,7 @@ export default function factory(arch: Architecture, dockerDirManager: DockerDirM
       }
     });
   case 'win32':
+    // TODO: Implement VM switching for WSL backends
     return new WSLBackend((backend: WSLBackend) => {
       if (process.env.RD_MOCK_FOR_SCREENSHOTS) {
         return new WSLKubernetesBackendMock(backend);

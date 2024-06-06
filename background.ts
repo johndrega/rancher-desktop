@@ -756,6 +756,8 @@ ipcMainProxy.on('k8s-reset', async(_, arg) => {
   await doK8sReset(arg, { interactive: true });
 });
 
+ipcMainProxy.on('vm-switch', (_, machine_name) => switchVM(machine_name));
+
 ipcMainProxy.handle('api-get-credentials', () => mainEvents.invoke('api-get-credentials'));
 
 ipcMainProxy.handle('get-locked-fields', () => settingsImpl.getLockedSettings());
@@ -796,6 +798,18 @@ async function doK8sReset(arg: 'fast' | 'wipe' | 'fullRestart', context: Command
       console.error(ex);
     }
   }
+}
+
+function switchVM(machine_name: string): Promise<void> | void {
+  if (backendIsBusy()) {
+    console.log(`Skipping reset, invalid state ${ k8smanager.state }`);
+    return;
+  }
+
+  return k8smanager.stop()
+    .then(() => settingsImpl.save(settingsImpl.merge(cfg, { virtualMachine: { name: machine_name } })))
+    .then(() => startK8sManager())
+    .catch(console.error)
 }
 
 ipcMainProxy.on('k8s-restart', async() => {
